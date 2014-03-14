@@ -1,14 +1,13 @@
 var tailMod = require('file-tail')
 ,   fs = require ('fs')
 ,   minimatch = require ('minimatch')
-,   eventEmitter = require ('events')
+,   events = require ('events')
 ;
 
 module.exports.startTailing = function(fd, ext){
-	ext = ext || "*"
+	ext = ext || "*";
 
 	var folderWatcher = new events.EventEmitter()
-	, fdsToTail = []
 	, tailObjs = []
 	, tailInit
 	, folderInit
@@ -25,8 +24,8 @@ module.exports.startTailing = function(fd, ext){
 	tailInit = function(fd) {
 		fs.stat(fd, function(err, stats) {
 			onErr(err);
-			if (stats.isDirectory) {
-				folderInit(fd)
+			if (stats.isDirectory()) {
+				folderInit(fd + '/');
 			}else{
 				var tailObj = tailMod.startTailing(fd);
 				tailObjs.push(tailObj);
@@ -41,26 +40,25 @@ module.exports.startTailing = function(fd, ext){
 	// This function starts tailing a directory.  Recursive.
 	// -----------------------------------------------------
 	folderInit =  function(fd) {
+		var i
+		, fdsToTail = []
+		;
 		fs.readdir(fd, function(err, files) {
-			onErr(err)
-			for (var i = 0; i < files.length; i++) {
+			onErr(err);
+			for (i = 0; i < files.length; i++) {
 				if(minimatch(files[i], ext)){
-					fdsToTail.push(files[i]);
+					fdsToTail.push(fd+files[i]);
 				}
 			}
 			
-			for (var i = 0; i < fdsToTail.length; i++) {
+			for (i = 0; i < fdsToTail.length; i++) {
 				tailInit(fdsToTail[i]);
 			}
 		});
-	}
+	};
 
 	folderInit(fd);
 
 	folderWatcher.tails = tailObjs; // intentionally exposed
 	return folderWatcher;
 };
-
-function tailInit (argument) {
-	// body...
-}
